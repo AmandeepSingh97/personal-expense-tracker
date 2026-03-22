@@ -17,13 +17,15 @@ st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Dashboard")
 
 # ── Period selector ───────────────────────────────────────────────────────────
-periods      = last_n_periods(12)
-period_opts  = {p: period_label(p) for p in reversed(periods)}
-cur          = current_period()
+periods     = last_n_periods(12)
+period_opts = {p: period_label(p) for p in reversed(periods)}
+cur         = current_period()
+# key= persists selection across reruns
 period = st.selectbox(
     "Period", list(period_opts.keys()),
     format_func=lambda p: period_opts[p],
-    index=list(reversed(periods)).index(cur),
+    index=list(reversed(periods)).index(st.session_state.get("dash_period", cur)),
+    key="dash_period",
     label_visibility="collapsed",
 )
 

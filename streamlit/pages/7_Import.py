@@ -6,7 +6,7 @@ import pdfplumber
 import io, hashlib, re
 from datetime import datetime
 
-from utils.db import select, insert, exists
+from utils.db import select, insert, select_all
 from utils.categorizer import categorize
 from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji
 from utils.formatters import fmt_inr
@@ -19,6 +19,10 @@ st.title("📥 Import Transactions")
 JOINT_PATTERNS = [r"Jointexp", r"MonthExp", r"ExpenseOct", r"ExpenseDec",
                    r"ExpenseJan", r"ExpenseSep", r"ExpenseFeb", r"Rentplusexp"]
 
+PREET_PATTERNS = [r"PreetPersonal\w*", r"Preetpers\w*"]
+PREET_SPLIT    = [("Preet Badminton", 3000), ("Preet Beauty Products", 2000), ("Personal Expenses", 10000)]
+PREET_TOTAL    = sum(a for _, a in PREET_SPLIT)   # 15,000
+
 BASE_SPLIT = [
     ("Rent",        45000), ("Electricity", 1000),
     ("Cylinder",      500), ("Groceries",  10000),
@@ -30,6 +34,16 @@ FULL_TOTAL = BASE_TOTAL + sum(a for _, a in MAID_COOK)  # 76,000
 
 def is_joint(desc: str) -> bool:
     return any(re.search(p, desc, re.I) for p in JOINT_PATTERNS)
+
+def is_preet(desc: str) -> bool:
+    return any(re.search(p, desc, re.I) for p in PREET_PATTERNS)
+
+def split_preet(row: dict) -> list:
+    return [
+        {**row, "amount": -amt, "category": cat,
+         "description": f"[{cat}] {row['description'][:50]}", "manually_corrected": 1}
+        for cat, amt in PREET_SPLIT
+    ]
 
 def split_joint(row: dict) -> list:
     total = abs(float(row["amount"]))
@@ -88,11 +102,13 @@ def parse_icici_pdf(file_bytes: bytes) -> list:
     return result
 
 def build_rows(raw_rows: list) -> list:
-    """Apply categorization + joint-expense splitting to raw rows."""
+    """Apply categorization, joint-expense splitting, and Preet Personal splitting."""
     result = []
     for r in raw_rows:
         if is_joint(r["description"]):
             result.extend(split_joint(r))
+        elif is_preet(r["description"]):
+            result.extend(split_preet(r))
         else:
             c = categorize(r["description"])
             result.append({**r, **c, "manually_corrected": 0})
@@ -202,12 +218,18 @@ if st.session_state.get("import_rows"):
 
     if st.button("✅ Import All", type="primary", use_container_width=True):
         imp = skip = 0
+        # Fetch ALL existing hashes in ONE call — avoids N separate API calls
+        existing_hashes = {
+            r["dedup_hash"] for r in select_all("transactions", columns="dedup_hash")
+            if r.get("dedup_hash")
+        }
         progress = st.progress(0)
         for i, r in enumerate(rows):
             h = hashlib.sha256(f"{r['date']}|{r['description']}|{r['amount']}".encode()).hexdigest()
-            if exists("transactions", dedup_hash=h):
+            if h in existing_hashes:
                 skip += 1
             else:
+                existing_hashes.add(h)   # prevent in-batch duplicates
                 insert("transactions", {
                     "date": r["date"], "description": r["description"],
                     "amount": float(r["amount"]), "account_name": account_name,

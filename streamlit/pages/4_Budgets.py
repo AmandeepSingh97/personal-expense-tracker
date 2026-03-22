@@ -17,7 +17,8 @@ period_opts = {p: period_label(p) for p in reversed(periods)}
 cur         = current_period()
 period = st.selectbox("Period", list(period_opts.keys()),
     format_func=lambda p: period_opts[p],
-    index=list(reversed(periods)).index(cur),
+    index=list(reversed(periods)).index(st.session_state.get("budgets_period", cur)),
+    key="budgets_period",
     label_visibility="collapsed")
 
 budgets = get_budgets_with_spend(period)
@@ -47,11 +48,15 @@ MY_BUDGETS = [
     ("Preet Beauty Products",  2000), ("Donation",                1100),
 ]
 
-if not budgets:
-    st.info("No budgets set yet.")
-    if st.button("🚀 Seed all 22 budgets with my defaults", type="primary"):
+seeded_cats = {b["category"] for b in budgets}
+missing     = [cat for cat, _ in MY_BUDGETS if cat not in seeded_cats]
+
+if missing:
+    label = "🚀 Seed all 22 budgets" if not budgets else f"🚀 Add {len(missing)} missing budgets"
+    st.info(f"{len(missing)} budget categories not yet set." if budgets else "No budgets set yet.")
+    if st.button(label, type="primary"):
         now = datetime.now(timezone.utc).isoformat()
-        for cat, limit in MY_BUDGETS:
+        for cat, limit in [(c, l) for c, l in MY_BUDGETS if c in missing]:
             upsert("budgets",
                 {"category": cat, "monthly_limit": limit,
                  "alert_threshold_pct": 80, "updated_at": now},

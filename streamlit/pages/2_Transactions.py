@@ -3,7 +3,7 @@
 import streamlit as st
 import pandas as pd
 
-from utils.db import select, update
+from utils.db import select, update, delete
 from utils.data import get_transactions
 from utils.budget_period import current_period, period_label, last_n_periods
 from utils.data import get_transactions as _get_txns  # noqa: F401 keep data import consistent
@@ -81,7 +81,7 @@ for _, r in df.sort_values("date", ascending=False).iterrows():
     color = "#10b981" if amt > 0 else "#ef4444"
     sign  = "+" if amt > 0 else "-"
 
-    c1, c2, c3, c4, c5 = st.columns([1, 4, 2, 2, 1])
+    c1, c2, c3, c4, c5, c6 = st.columns([1, 4, 2, 2, 1, 1])
     c1.write(emoji)
     c2.write(f"**{r.get('merchant_name') or str(r['description'])[:55]}**  \n"
              f"_{fmt_date(r['date'])} · {r['account_name']}_")
@@ -91,6 +91,19 @@ for _, r in df.sort_values("date", ascending=False).iterrows():
     with c5:
         if st.button("✏️", key=f"ed_{r['id']}", help="Edit"):
             st.session_state[f"editing_{r['id']}"] = True
+    with c6:
+        if st.button("🗑️", key=f"del_{r['id']}", help="Delete"):
+            st.session_state[f"confirm_del_{r['id']}"] = True
+
+    if st.session_state.get(f"confirm_del_{r['id']}"):
+        st.warning(f"Delete **{str(r['description'])[:40]}**?")
+        yes, no = st.columns(2)
+        if yes.button("Yes, delete", key=f"yes_{r['id']}", type="primary"):
+            delete("transactions", id=r["id"])
+            st.session_state.pop(f"confirm_del_{r['id']}", None)
+            st.cache_data.clear(); st.rerun()
+        if no.button("Cancel", key=f"no_{r['id']}"):
+            st.session_state.pop(f"confirm_del_{r['id']}", None); st.rerun()
 
     if st.session_state.get(f"editing_{r['id']}"):
         with st.form(f"form_{r['id']}"):

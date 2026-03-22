@@ -1,7 +1,7 @@
 """Accounts — balance tracking."""
 
 import streamlit as st, json
-from datetime import date
+from datetime import date, datetime
 from utils.db import select, insert, update, delete
 from utils.data import get_accounts_with_balance
 from utils.formatters import fmt_inr, fmt_date
@@ -105,8 +105,12 @@ else:
                     format_func=lambda t: f"{TYPE_EMOJI[t]} {t.title()}")
                 new_bal     = c2.number_input("Opening Balance (₹)",
                     value=float(a["opening_balance"]), step=100.0)
-                new_date    = c1.text_input("Balance as of (YYYY-MM-DD)",
-                    value=a.get("opening_date",""))
+                try:
+                    _od = datetime.strptime(a.get("opening_date","2024-01-01"), "%Y-%m-%d").date()
+                except Exception:
+                    _od = date.today()
+                new_date_d  = c1.date_input("Balance as of", value=_od, key=f"od_{a['id']}")
+                new_date    = new_date_d.isoformat()
                 new_color   = c2.selectbox("Color", COLORS,
                     index=COLORS.index(a["color"]) if a["color"] in COLORS else 0)
                 new_tags    = st.multiselect("Tags", PRESET_TAGS, default=[t for t in tags if t in PRESET_TAGS])
