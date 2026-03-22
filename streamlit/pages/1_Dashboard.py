@@ -16,8 +16,16 @@ from utils.formatters import fmt_inr
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Dashboard")
 
-period = current_period()
-st.caption(f"Period: **{period_label(period)}**")
+# ── Period selector ───────────────────────────────────────────────────────────
+periods      = last_n_periods(12)
+period_opts  = {p: period_label(p) for p in reversed(periods)}
+cur          = current_period()
+period = st.selectbox(
+    "Period", list(period_opts.keys()),
+    format_func=lambda p: period_opts[p],
+    index=list(reversed(periods)).index(cur),
+    label_visibility="collapsed",
+)
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -167,7 +175,9 @@ st.divider()
 st.subheader("🕐 Recent Transactions")
 df_recent = get_transactions(period=period)
 if df_recent.empty:
-    st.info("No transactions yet. Add one using Add Transaction.")
+    st.info("No transactions this period. Use **Add Transaction** in the sidebar, or **Import** a bank statement.")
+    if st.button("➕ Add your first transaction"):
+        st.switch_page("pages/3_Add_Transaction.py")
 else:
     df_show = df_recent.sort_values("date", ascending=False).head(10)
     for _, r in df_show.iterrows():

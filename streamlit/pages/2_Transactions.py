@@ -6,6 +6,7 @@ import pandas as pd
 from utils.db import select, update
 from utils.data import get_transactions
 from utils.budget_period import current_period, period_label, last_n_periods
+from utils.data import get_transactions as _get_txns  # noqa: F401 keep data import consistent
 from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji
 from utils.formatters import fmt_inr, fmt_date
 
@@ -18,7 +19,10 @@ with st.sidebar:
     st.header("Filters")
     periods = last_n_periods(12)
     period_labels = {p: period_label(p) for p in reversed(periods)}
-    sel_period = st.selectbox("Period", list(period_labels), format_func=lambda p: period_labels[p])
+    cur_p = current_period()
+    sel_period = st.selectbox("Period", list(period_labels),
+        format_func=lambda p: period_labels[p],
+        index=list(reversed(periods)).index(cur_p))
     search = st.text_input("Search description")
     accts = select("accounts", is_active=1)
     acct_list = ["All"] + [a["name"] for a in accts]
