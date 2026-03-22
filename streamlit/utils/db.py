@@ -1,65 +1,86 @@
-"""Database helpers — psycopg v3 wrapper using Streamlit secrets."""
+"""Database helpers — Supabase HTTP client (no direct PostgreSQL connection needed).
+
+Uses supabase-py which connects via HTTPS port 443 — works from any network.
+Secrets required in .streamlit/secrets.toml:
+  SUPABASE_URL = "https://[ref].supabase.co"
+  SUPABASE_KEY = "eyJ..."  # anon public key
+"""
 
 import streamlit as st
-import psycopg
-from psycopg.rows import dict_row
-from contextlib import contextmanager
+from supabase import create_client, Client
 
 
-def _dsn() -> str:
-    """Get DATABASE_URL from Streamlit secrets or environment."""
+@st.cache_resource
+def _client() -> Client:
     try:
-        url = st.secrets["DATABASE_URL"]
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
     except Exception:
         import os
-        url = os.environ.get("DATABASE_URL", "")
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_KEY", "")
 
-    if not url:
+    if not url or not key:
         st.error(
-            "**DATABASE_URL not configured.**\n\n"
+            "**Supabase credentials not configured.**\n\n"
             "Go to your Streamlit Cloud app → ⋮ → **Settings → Secrets** and add:\n"
-            "```toml\nDATABASE_URL = \"postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres\"\n```"
+            "```toml\n"
+            'SUPABASE_URL = "https://[ref].supabase.co"\n'
+            'SUPABASE_KEY = "eyJ..."\n'
+            "```\n"
+            "Get these from Supabase → **Settings → API**."
         )
         st.stop()
 
-    return url
+    return create_client(url, key)
 
 
-@contextmanager
-def _conn():
-    """Open a connection, commit on success, rollback on error."""
-    with psycopg.connect(_dsn(), row_factory=dict_row) as conn:
-        yield conn
+# ── SELECT helpers ────────────────────────────────────────────────────────────
+
+def select(table: str, columns: str = "*", limit: int = None, **eq_filters) -> list:
+    """Fetch rows from a table with optional equality filters."""
+    q = _client().table(table).select(columns)
+    for col, val in eq_filters.items():
+        if val is not None:
+            q = q.eq(col, val)
+    if limit:
+        q = q.limit(limit)
+    return q.execute().data or []
 
 
-def query(sql: str, params: tuple = ()) -> list:
-    """Run SELECT — returns list of dicts."""
-    with _conn() as conn:
-        return conn.execute(sql, params).fetchall()
+def select_all(table: str, columns: str = "*") -> list:
+    """Fetch all rows (up to 10,000)."""
+    return _client().table(table).select(columns).execute().data or []
 
 
-def query_one(sql: str, params: tuple = ()):
-    """Run SELECT — returns first row dict or None."""
-    rows = query(sql, params)
+# ── WRITE helpers ─────────────────────────────────────────────────────────────
+
+def insert(table: str, data: dict):
+    """Insert a row. Returns inserted row or None."""
+    result = _client().table(table).insert(data).execute()
+    rows = result.data or []
     return rows[0] if rows else None
 
 
-def execute(sql: str, params: tuple = ()):
-    """Run INSERT/UPDATE/DELETE — returns (rowcount, first_row_or_None)."""
-    with _conn() as conn:
-        cur = conn.execute(sql, params)
-        row = None
-        try:
-            row = cur.fetchone()
-        except Exception:
-            pass
-        return cur.rowcount, row
+def upsert(table: str, data: dict, on_conflict: str = ""):
+    """Upsert a row."""
+    q = _client().table(table).upsert(data)
+    if on_conflict:
+        q = _client().table(table).upsert(data, on_conflict=on_conflict)
+    return q.execute().data
 
 
-def execute_many(sql: str, params_list: list) -> int:
-    with _conn() as conn:
-        total = 0
-        for params in params_list:
-            cur = conn.execute(sql, params)
-            total += cur.rowcount
-        return total
+def update(table: str, data: dict, **eq_filters):
+    """Update rows matching eq_filters."""
+    q = _client().table(table).update(data)
+    for col, val in eq_filters.items():
+        q = q.eq(col, val)
+    return q.execute().data
+
+
+def delete(table: str, **eq_filters):
+    """Delete rows matching eq_filters."""
+    q = _client().table(table).delete()
+    for col, val in eq_filters.items():
+        q = q.eq(col, val)
+    return q.execute().data
