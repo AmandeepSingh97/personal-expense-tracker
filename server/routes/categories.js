@@ -1,0 +1,79 @@
+const express = require('express');
+const { getDb } = require('../db');
+
+const router = express.Router();
+
+// Built-in categories — returned alongside custom ones so the frontend
+// has one source of truth.
+const BUILTIN = [
+  { name: 'Rent',                  emoji: '🏠', color: '#6366f1', custom: false },
+  { name: 'Maid',                  emoji: '🧹', color: '#8b5cf6', custom: false },
+  { name: 'Cook',                  emoji: '👨‍🍳', color: '#f97316', custom: false },
+  { name: 'SIPs',                  emoji: '📈', color: '#14b8a6', custom: false },
+  { name: 'Groceries',             emoji: '🛒', color: '#f59e0b', custom: false },
+  { name: 'Electricity',           emoji: '⚡', color: '#eab308', custom: false },
+  { name: 'WiFi',                  emoji: '📶', color: '#38bdf8', custom: false },
+  { name: 'Outing',                emoji: '🍽️', color: '#ec4899', custom: false },
+  { name: 'Cylinder',              emoji: '🔥', color: '#ef4444', custom: false },
+  { name: 'Car Loan',              emoji: '🚗', color: '#10b981', custom: false },
+  { name: 'Petrol',                emoji: '⛽', color: '#06b6d4', custom: false },
+  { name: 'PPF',                   emoji: '🏦', color: '#3b82f6', custom: false },
+  { name: 'Insurance',             emoji: '🛡️', color: '#84cc16', custom: false },
+  { name: 'Emergency Cash',        emoji: '🆘', color: '#dc2626', custom: false },
+  { name: 'Holiday',               emoji: '✈️', color: '#0ea5e9', custom: false },
+  { name: 'Home Savings',          emoji: '🏡', color: '#22c55e', custom: false },
+  { name: 'Personal Expenses',     emoji: '👤', color: '#a855f7', custom: false },
+  { name: 'LIC',                   emoji: '📋', color: '#64748b', custom: false },
+  { name: 'Send to Parents',       emoji: '👨‍👩‍👧', color: '#fb923c', custom: false },
+  { name: 'Preet Badminton',       emoji: '🏸', color: '#38bdf8', custom: false },
+  { name: 'Preet Beauty Products', emoji: '💄', color: '#e879f9', custom: false },
+  { name: 'Donation',              emoji: '🙏', color: '#f59e0b', custom: false },
+  // System
+  { name: 'Income',    emoji: '💰', color: '#22c55e', custom: false },
+  { name: 'Transfers', emoji: '🔁', color: '#94a3b8', custom: false },
+  { name: 'Uncategorized', emoji: '❓', color: '#9ca3af', custom: false },
+];
+
+// GET /api/categories  — built-in + custom
+router.get('/', (req, res) => {
+  const db = getDb();
+  const custom = db.prepare('SELECT * FROM custom_categories ORDER BY created_at').all()
+    .map(c => ({ ...c, custom: true }));
+  res.json([...BUILTIN, ...custom]);
+});
+
+// POST /api/categories  — create custom category
+router.post('/', (req, res) => {
+  const db = getDb();
+  const { name, emoji = '📌', color = '#9ca3af' } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'name required' });
+
+  // Don't allow overriding built-ins
+  if (BUILTIN.find(b => b.name.toLowerCase() === name.toLowerCase())) {
+    return res.status(400).json({ error: 'Built-in category already exists' });
+  }
+
+  const existing = db.prepare('SELECT * FROM custom_categories WHERE name = ?').get(name.trim());
+  if (existing) return res.json({ ...existing, custom: true });
+
+  const result = db.prepare(
+    'INSERT INTO custom_categories (name, emoji, color) VALUES (?, ?, ?)'
+  ).run(name.trim(), emoji, color);
+
+  res.json({ id: result.lastInsertRowid, name: name.trim(), emoji, color, custom: true });
+});
+
+// DELETE /api/categories/:name  — delete custom category only
+router.delete('/:name', (req, res) => {
+  const db = getDb();
+  const name = decodeURIComponent(req.params.name);
+
+  if (BUILTIN.find(b => b.name === name)) {
+    return res.status(400).json({ error: 'Cannot delete built-in categories' });
+  }
+
+  db.prepare('DELETE FROM custom_categories WHERE name = ?').run(name);
+  res.json({ ok: true });
+});
+
+module.exports = router;
