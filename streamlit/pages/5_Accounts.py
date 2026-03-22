@@ -65,21 +65,74 @@ st.divider()
 if not accounts:
     st.info("No accounts yet. Add your first account above.")
 else:
-    cols = st.columns(min(len(accounts), 3))
-    for i, a in enumerate(accounts):
+    for a in accounts:
         bal  = a["current_balance"]
         tags = a.get("tags") or []
         bc   = "#ef4444" if bal < 0 else "#10b981"
-        with cols[i % 3]:
-            st.markdown(f"""
-<div style='border:1px solid #334155;border-radius:12px;padding:16px;
-            border-top:4px solid {a["color"]}'>
-  <div style='font-weight:600'>{TYPE_EMOJI.get(a['account_type'],'🏦')} {a['name']}</div>
-  <div style='color:#94a3b8;font-size:0.8rem'>{a.get('bank') or ''}</div>
-  <div style='font-size:1.5rem;font-weight:700;color:{bc};margin:6px 0'>{fmt_inr(bal)}</div>
-  <div style='color:#64748b;font-size:0.75rem'>{a['tx_count']} transactions</div>
-  <div style='margin-top:6px'>{''.join(f"<span style='background:#1e293b;color:#94a3b8;border-radius:20px;padding:2px 8px;font-size:0.7rem;margin-right:4px'>{t}</span>" for t in tags)}</div>
-</div>""", unsafe_allow_html=True)
-            if st.button("🗑️", key=f"del_{a['id']}", help="Remove account"):
-                update("accounts", {"is_active": 0}, id=a["id"])
+        editing = st.session_state.get(f"edit_{a['id']}", False)
+
+        with st.container():
+            c1, c2, c3 = st.columns([5, 1, 1])
+            with c1:
+                st.markdown(
+                    f"**{TYPE_EMOJI.get(a['account_type'],'🏦')} {a['name']}**"
+                    + (f"  ·  {a['bank']}" if a.get("bank") else "")
+                    + f"  —  <span style='color:{bc}'>{fmt_inr(bal)}</span>"
+                    + f"  <span style='color:#64748b;font-size:0.8rem'>({a['tx_count']} txns)</span>",
+                    unsafe_allow_html=True,
+                )
+                if tags:
+                    st.caption("  ".join(f"`{t}`" for t in tags))
+            with c2:
+                if st.button("✏️ Edit", key=f"btn_edit_{a['id']}"):
+                    st.session_state[f"edit_{a['id']}"] = not editing
+                    st.rerun()
+            with c3:
+                if st.button("🗑️ Remove", key=f"del_{a['id']}"):
+                    update("accounts", {"is_active": 0}, id=a["id"])
+                    st.cache_data.clear(); st.rerun()
+
+        # ── Inline edit form ──────────────────────────────────────────────────
+        if editing:
+            with st.form(f"edit_form_{a['id']}"):
+                st.markdown(f"**Editing: {a['name']}**")
+                c1, c2 = st.columns(2)
+                new_name    = c1.text_input("Name",         value=a["name"])
+                new_bank    = c2.text_input("Bank",         value=a.get("bank") or "")
+                new_type    = c1.selectbox("Type",
+                    ["savings","current","credit","investment","cash"],
+                    index=["savings","current","credit","investment","cash"].index(a["account_type"]),
+                    format_func=lambda t: f"{TYPE_EMOJI[t]} {t.title()}")
+                new_bal     = c2.number_input("Opening Balance (₹)",
+                    value=float(a["opening_balance"]), step=100.0)
+                new_date    = c1.text_input("Balance as of (YYYY-MM-DD)",
+                    value=a.get("opening_date",""))
+                new_color   = c2.selectbox("Color", COLORS,
+                    index=COLORS.index(a["color"]) if a["color"] in COLORS else 0)
+                new_tags    = st.multiselect("Tags", PRESET_TAGS, default=[t for t in tags if t in PRESET_TAGS])
+                new_custom  = st.text_input("Custom tag", value="")
+                new_notes   = st.text_input("Notes", value=a.get("notes") or "")
+
+                sv, ca = st.columns(2)
+                saved  = sv.form_submit_button("💾 Save", type="primary", use_container_width=True)
+                cancel = ca.form_submit_button("Cancel", use_container_width=True)
+
+            if saved:
+                all_tags = new_tags + ([new_custom.strip()] if new_custom.strip() else [])
+                update("accounts", {
+                    "name":            new_name.strip(),
+                    "bank":            new_bank or None,
+                    "account_type":    new_type,
+                    "opening_balance": new_bal,
+                    "opening_date":    new_date,
+                    "color":           new_color,
+                    "notes":           new_notes or None,
+                    "tags":            all_tags,
+                }, id=a["id"])
+                st.session_state.pop(f"edit_{a['id']}", None)
+                st.success("Saved!")
                 st.cache_data.clear(); st.rerun()
+            if cancel:
+                st.session_state.pop(f"edit_{a['id']}", None); st.rerun()
+
+        st.divider()
