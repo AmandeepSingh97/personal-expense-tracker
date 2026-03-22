@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-const { getDb } = require('./db');
+const db = require('./db');
 const transactionsRouter = require('./routes/transactions');
 const tagsRouter = require('./routes/tags');
 const categoriesRouter = require('./routes/categories');
@@ -21,9 +21,6 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Initialize DB on startup
-getDb();
 
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/tags', tagsRouter);

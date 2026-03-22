@@ -1,40 +1,34 @@
 const express = require('express');
-const { getDb } = require('../db');
+const db = require('../db');
 const { runAlertEngine } = require('../services/alertEngine');
 
 const router = express.Router();
 
-// GET /api/alerts  — active (undismissed) alerts
-router.get('/', (req, res) => {
-  const db = getDb();
-  const alerts = db
-    .prepare(
-      `SELECT * FROM alerts
-       WHERE dismissed_at IS NULL
-       ORDER BY triggered_at DESC`
-    )
-    .all();
-  res.json(alerts);
+router.get('/', async (req, res) => {
+  try {
+    res.json(await db.query('SELECT * FROM alerts WHERE dismissed_at IS NULL ORDER BY triggered_at DESC'));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/alerts/:id/dismiss
-router.post('/:id/dismiss', (req, res) => {
-  const db = getDb();
-  db.prepare(`UPDATE alerts SET dismissed_at = datetime('now') WHERE id = ?`).run(req.params.id);
-  res.json({ ok: true });
+router.post('/:id/dismiss', async (req, res) => {
+  try {
+    await db.run('UPDATE alerts SET dismissed_at=NOW() WHERE id=?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/alerts/dismiss-all
-router.post('/dismiss-all', (req, res) => {
-  const db = getDb();
-  db.prepare(`UPDATE alerts SET dismissed_at = datetime('now') WHERE dismissed_at IS NULL`).run();
-  res.json({ ok: true });
+router.post('/dismiss-all', async (req, res) => {
+  try {
+    await db.run('UPDATE alerts SET dismissed_at=NOW() WHERE dismissed_at IS NULL');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/alerts/run  — manually trigger alert engine
-router.post('/run', (req, res) => {
-  const created = runAlertEngine(req.body.month);
-  res.json({ created });
+router.post('/run', async (req, res) => {
+  try {
+    const created = await runAlertEngine(req.body.month);
+    res.json({ created });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

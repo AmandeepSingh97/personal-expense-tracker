@@ -1,55 +1,39 @@
 const express = require('express');
-const { getDb } = require('../db');
+const db = require('../db');
 const { periodExpr } = require('../utils/budgetPeriod');
 
 const router = express.Router();
-const PERIOD = periodExpr('date');
 
-// GET /api/investments/summary
-// Returns cumulative contributions, returns, and monthly trend.
-router.get('/summary', (req, res) => {
-  const db = getDb();
+router.get('/summary', async (req, res) => {
+  try {
+    const PERIOD = periodExpr('date');
 
-  // Cumulative contributions (money that went INTO investments)
-  const contributed = db.prepare(`
-    SELECT category,
-           ROUND(SUM(ABS(amount)), 2) as total,
-           COUNT(*) as count,
-           MIN(date) as first_date,
-           MAX(date) as last_date
-    FROM transactions
-    WHERE is_investment = 1 AND amount < 0 AND is_transfer = 0
-    GROUP BY category
-    ORDER BY total DESC
-  `).all();
+    const contributed = await db.query(`
+      SELECT category, ROUND(SUM(ABS(amount)),2) as total, COUNT(*)::int as count,
+             MIN(date) as first_date, MAX(date) as last_date
+      FROM transactions
+      WHERE is_investment=1 AND amount<0 AND is_transfer=0
+      GROUP BY category ORDER BY total DESC`);
 
-  // Returns received (dividends, NPS withdrawal, redemptions coming BACK as income)
-  const returns = db.prepare(`
-    SELECT category, description,
-           ROUND(amount, 2) as amount,
-           date
-    FROM transactions
-    WHERE (category IN ('Income') AND sub_category IN ('MSFT Dividend','NPS','Dividend','SGB Interest'))
-       OR (is_investment = 1 AND amount > 0)
-    ORDER BY date DESC
-  `).all();
+    const returns = await db.query(`
+      SELECT category, description, ROUND(amount,2) as amount, date
+      FROM transactions
+      WHERE (category='Income' AND sub_category IN ('MSFT Dividend','NPS','Dividend','SGB Interest'))
+         OR (is_investment=1 AND amount>0)
+      ORDER BY date DESC`);
 
-  // Monthly contributions trend
-  const monthly = db.prepare(`
-    SELECT (${PERIOD}) as month,
-           ROUND(SUM(ABS(amount)), 2) as contributed,
-           COUNT(*) as count
-    FROM transactions
-    WHERE is_investment = 1 AND amount < 0 AND is_transfer = 0
-    GROUP BY (${PERIOD})
-    ORDER BY month ASC
-  `).all();
+    const monthly = await db.query(`
+      SELECT (${PERIOD}) as month,
+             ROUND(SUM(ABS(amount)),2) as contributed, COUNT(*)::int as count
+      FROM transactions
+      WHERE is_investment=1 AND amount<0 AND is_transfer=0
+      GROUP BY (${PERIOD}) ORDER BY month ASC`);
 
-  // Total numbers
-  const totalContributed = contributed.reduce((s, r) => s + r.total, 0);
-  const totalReturns     = returns.reduce((s, r) => s + Math.abs(r.amount), 0);
+    const totalContributed = contributed.reduce((s,r) => s + Number(r.total), 0);
+    const totalReturns     = returns.reduce((s,r) => s + Math.abs(Number(r.amount)), 0);
 
-  res.json({ contributed, returns, monthly, totalContributed, totalReturns });
+    res.json({ contributed, returns, monthly, totalContributed, totalReturns });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;
