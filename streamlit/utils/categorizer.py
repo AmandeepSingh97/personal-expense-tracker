@@ -31,8 +31,12 @@ RULES: list[Rule] = [
     _r(r"mutual\s*fund|\bsip\b|systematic\s*inv", category="SIPs",  recurring=True,  is_investment=True),
     _r(r"zerodha|groww|upstox",                   category="SIPs",  sub="Stocks",    recurring=False, is_investment=True),
 
-    # Car Loan
-    _r(r"CarEmi\w*|CarFeb\w*|OctCarandSip",       category="Car Loan",       recurring=True),
+    # Car Loan / Car+SIP combined transfers
+    _r(r"CarEmi\w*|CarFeb\w*|OctCarandSip|CarandSip", category="Car Loan",   recurring=True),
+
+    # Preet SIP / Aman SIP transfers → SIPs
+    _r(r"SipPsnl\w*|PersSip\w*|PreetSIP\w*|PreetSip\w*", category="SIPs",   recurring=True, is_investment=True),
+    _r(r"\bLGIPO\b|AmanSIP\w*",                          category="SIPs",   recurring=True, is_investment=True),
 
     # Insurance
     _r(r"Insurance(?:Oct|Nov|Dec|Jan|Feb|Mar)\w*", category="Insurance",     recurring=True),
@@ -136,7 +140,7 @@ RULES: list[Rule] = [
 
     # Income
     _r(r"salary|sal\s*crd|payroll|stipend|linkedin\s*technology", category="Income", sub="Salary", merchant="LinkedIn", recurring=True),
-    _r(r"interest\s*cr(edit)?|int\s*pd|int\s*cr", category="Income", sub="Interest", recurring=True),
+    _r(r"interest\s*cr(edit)?|int[\s.]*pd|int[\s.]*cr", category="Income", sub="Interest", recurring=True),
     _r(r"\birm\b.*usd|inrem",    category="Income", sub="MSFT Dividend", merchant="Microsoft"),
     _r(r"MsftCash",              category="Transfers", is_transfer=True),
     _r(r"sovereign\s*gold|sgb",  category="Income", sub="SGB Interest"),

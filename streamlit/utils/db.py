@@ -1,4 +1,4 @@
-"""Database helpers — thin wrapper around psycopg2 using Streamlit secrets."""
+"""Database helpers — psycopg2 wrapper using Streamlit secrets."""
 
 import streamlit as st
 import psycopg2
@@ -7,16 +7,31 @@ from contextlib import contextmanager
 
 
 def _dsn() -> str:
+    """Get DATABASE_URL from Streamlit secrets or environment."""
     try:
-        return st.secrets["DATABASE_URL"]
+        url = st.secrets["DATABASE_URL"]
     except Exception:
         import os
-        return os.environ.get("DATABASE_URL", "")
+        url = os.environ.get("DATABASE_URL", "")
+
+    if not url:
+        st.error(
+            "**DATABASE_URL not configured.**\n\n"
+            "Go to your Streamlit Cloud app → ⋮ menu → **Settings → Secrets** and add:\n"
+            "```\nDATABASE_URL = \"postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres\"\n```"
+        )
+        st.stop()
+
+    # Ensure SSL for Supabase (non-localhost)
+    if "localhost" not in url and "127.0.0.1" not in url:
+        if "sslmode=" not in url:
+            url += "?sslmode=require"
+
+    return url
 
 
 @contextmanager
 def _conn():
-    """Open a connection, commit on success, rollback on error, always close."""
     conn = psycopg2.connect(_dsn(), cursor_factory=RealDictCursor)
     try:
         yield conn
@@ -29,7 +44,6 @@ def _conn():
 
 
 def query(sql: str, params: tuple = ()) -> list:
-    """Run SELECT — returns list of dicts."""
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
@@ -37,13 +51,12 @@ def query(sql: str, params: tuple = ()) -> list:
 
 
 def query_one(sql: str, params: tuple = ()):
-    """Run SELECT — returns first row or None."""
     rows = query(sql, params)
     return rows[0] if rows else None
 
 
 def execute(sql: str, params: tuple = ()):
-    """Run INSERT/UPDATE/DELETE — returns (rowcount, first_row_or_None)."""
+    """Returns (rowcount, first_row_or_None)."""
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
@@ -56,8 +69,7 @@ def execute(sql: str, params: tuple = ()):
             return cur.rowcount, row
 
 
-def execute_many(sql: str, params_list: list[tuple]) -> int:
-    """Run the same statement for multiple param sets."""
+def execute_many(sql: str, params_list: list) -> int:
     with _conn() as conn:
         with conn.cursor() as cur:
             total = 0
