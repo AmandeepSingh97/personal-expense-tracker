@@ -265,11 +265,13 @@ if accounts:
     for i in range(31):
         d = today + timedelta(days=i)
         if d.day == 25:
-            fig_line.add_vline(
-                x=d,
-                line_dash="dot",
-                line_color="#10b981",
-                annotation_text="Salary day",
+            fig_line.add_shape(
+                type="line", x0=d, x1=d, y0=0, y1=1,
+                yref="paper", line=dict(dash="dot", color="#10b981", width=1),
+            )
+            fig_line.add_annotation(
+                x=d, y=1, yref="paper", text="Salary day",
+                showarrow=False, font=dict(color="#10b981", size=10),
             )
 
     fig_line.update_layout(
