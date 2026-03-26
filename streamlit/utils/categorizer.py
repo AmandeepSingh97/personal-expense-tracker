@@ -139,7 +139,7 @@ RULES: list[Rule] = [
     _r(r"neft\s*to|imps\s*to|self\s*transfer|own\s*account", category="Transfers", is_transfer=True),
 
     # Income
-    _r(r"salary|sal\s*crd|payroll|stipend|linkedin\s*technology", category="Income", sub="Salary", merchant="LinkedIn", recurring=True),
+    _r(r"salary|sal\s*crd|payroll|stipend|linkedin\s*technology", category="Salary", sub=None, merchant="LinkedIn", recurring=True),
     _r(r"interest\s*cr(edit)?|int[\s.]*pd|int[\s.]*cr", category="Income", sub="Interest", recurring=True),
     _r(r"\birm\b.*usd|inrem",    category="Income", sub="MSFT Dividend", merchant="Microsoft"),
     _r(r"MsftCash",              category="Transfers", is_transfer=True),

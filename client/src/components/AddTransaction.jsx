@@ -8,9 +8,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Minus, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { createTransaction, getAccounts } from '../api';
+import { createTransaction, getAccounts, createCategory } from '../api';
 import { categoryMeta, INVESTMENT_CATEGORIES, CATEGORY_GROUPS } from '../utils/format';
-import { useCategories } from '../hooks/useCategories';
+import { useCategories, invalidateCategoryCache } from '../hooks/useCategories';
 
 // Quick date helpers
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -40,6 +40,8 @@ export default function AddTransaction({ onClose, onSaved }) {
   const [showDetails, setShowDetails] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [accounts, setAccounts] = useState([]);
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
 
   const amountRef = useRef();
   const descRef   = useRef();
@@ -90,10 +92,12 @@ export default function AddTransaction({ onClose, onSaved }) {
     if (!category) { toast.error('Pick a category'); return; }
     setSaving(true);
     try {
+      const isSalary = category === 'Salary';
+      const saveAmount = isSalary ? Math.abs(amount) : finalAmount;
       await createTransaction({
         date,
         description: description.trim() || category,
-        amount: finalAmount,
+        amount: saveAmount,
         account_name: account,
         category,
         is_recurring: isRecurring ? 1 : 0,
@@ -261,6 +265,54 @@ export default function AddTransaction({ onClose, onSaved }) {
                         );
                       })}
                     </div>
+                  </div>
+                )}
+
+                {/* + New Category */}
+                {!showNewCat ? (
+                  <button onClick={() => setShowNewCat(true)}
+                    className="w-full py-2 mt-1 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-400 transition-colors">
+                    + New Category
+                  </button>
+                ) : (
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Category name"
+                      value={newCatName}
+                      onChange={e => setNewCatName(e.target.value)}
+                      onKeyDown={async e => {
+                        if (e.key === 'Enter' && newCatName.trim()) {
+                          e.stopPropagation();
+                          try {
+                            await createCategory({ name: newCatName.trim() });
+                            invalidateCategoryCache();
+                            setNewCatName('');
+                            setShowNewCat(false);
+                            toast.success(`Created "${newCatName.trim()}"`);
+                          } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+                        }
+                        if (e.key === 'Escape') { setShowNewCat(false); setNewCatName(''); }
+                      }}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={async () => {
+                      if (!newCatName.trim()) return;
+                      try {
+                        await createCategory({ name: newCatName.trim() });
+                        invalidateCategoryCache();
+                        setNewCatName('');
+                        setShowNewCat(false);
+                        toast.success(`Created "${newCatName.trim()}"`);
+                      } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+                    }} className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                      Add
+                    </button>
+                    <button onClick={() => { setShowNewCat(false); setNewCatName(''); }}
+                      className="px-2 py-2 text-gray-400 hover:text-gray-600 text-sm">
+                      ✕
+                    </button>
                   </div>
                 )}
               </div>

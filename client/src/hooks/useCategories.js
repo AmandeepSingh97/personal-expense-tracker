@@ -51,7 +51,7 @@ export function useCategories() {
     return found ? { emoji: found.emoji, color: found.color } : { emoji: '📌', color: '#9ca3af' };
   }, [cats]);
 
-  const SYSTEM = new Set(['Income', 'Transfers', 'Uncategorized']);
+  const SYSTEM = new Set(['Salary', 'Income', 'Transfers', 'Uncategorized']);
   const expenseList = cats?.filter(c => !SYSTEM.has(c.name)) || [];
   const allList     = cats || [];
 

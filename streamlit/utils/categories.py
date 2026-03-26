@@ -23,6 +23,7 @@ CATEGORY_META: dict[str, dict] = {
     "Preet Badminton":       {"emoji": "🏸", "color": "#38bdf8"},
     "Preet Beauty Products": {"emoji": "💄", "color": "#e879f9"},
     "Donation":              {"emoji": "🙏", "color": "#f59e0b"},
+    "Salary":                {"emoji": "💼", "color": "#16a34a"},
     "Income":                {"emoji": "💰", "color": "#22c55e"},
     "Transfers":             {"emoji": "🔁", "color": "#94a3b8"},
     "Uncategorized":         {"emoji": "❓", "color": "#9ca3af"},
@@ -54,20 +55,74 @@ CATEGORY_GROUPS = {
     },
 }
 
+SYSTEM_CATEGORIES = {"Salary", "Income", "Transfers", "Uncategorized"}
+
 EXPENSE_CATEGORIES = [
     c for c in CATEGORY_META
-    if c not in {"Income", "Transfers", "Uncategorized"} | INVESTMENT_CATEGORIES
+    if c not in SYSTEM_CATEGORIES | INVESTMENT_CATEGORIES
 ]
 
 ALL_BUDGET_CATEGORIES = [
     c for c in CATEGORY_META
-    if c not in {"Income", "Transfers", "Uncategorized"}
+    if c not in SYSTEM_CATEGORIES
 ]
+
+# All categories usable in dropdowns (budget + system)
+ALL_CATEGORIES = [c for c in CATEGORY_META if c != "Uncategorized"]
 
 
 def cat_emoji(name: str) -> str:
-    return CATEGORY_META.get(name, {}).get("emoji", "📌")
+    meta = CATEGORY_META.get(name)
+    if meta:
+        return meta["emoji"]
+    # Check custom categories
+    for c in get_custom_categories():
+        if c["name"] == name:
+            return c.get("emoji", "📌")
+    return "📌"
 
 
 def cat_color(name: str) -> str:
-    return CATEGORY_META.get(name, {}).get("color", "#9ca3af")
+    meta = CATEGORY_META.get(name)
+    if meta:
+        return meta["color"]
+    for c in get_custom_categories():
+        if c["name"] == name:
+            return c.get("color", "#9ca3af")
+    return "#9ca3af"
+
+
+# ── Custom categories (stored in Supabase) ─────────────────────────────────
+
+def get_custom_categories() -> list[dict]:
+    """Fetch custom categories from DB."""
+    from utils.db import select
+    return select("custom_categories", columns="id,name,emoji,color")
+
+
+def get_all_category_names() -> list[str]:
+    """Built-in budget + investment + custom category names (for dropdowns)."""
+    custom = [c["name"] for c in get_custom_categories()]
+    return ALL_BUDGET_CATEGORIES + custom
+
+
+def get_all_category_options() -> list[str]:
+    """All selectable categories: budget + system + custom (excludes Uncategorized)."""
+    custom = [c["name"] for c in get_custom_categories()]
+    return ALL_CATEGORIES + custom
+
+
+def create_custom_category(name: str, emoji: str = "📌", color: str = "#9ca3af") -> dict | None:
+    """Create a new custom category. Returns the row or None."""
+    from utils.db import insert
+    if name in CATEGORY_META:
+        return None  # built-in already exists
+    return insert("custom_categories", {"name": name.strip(), "emoji": emoji, "color": color})
+
+
+def delete_custom_category(name: str):
+    """Delete a custom category by name."""
+    from utils.db import delete
+    if name in CATEGORY_META:
+        return  # can't delete built-ins
+    delete("custom_categories", name=name)

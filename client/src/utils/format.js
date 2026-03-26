@@ -59,6 +59,7 @@ export const CATEGORY_META = {
   'Preet Beauty Products': { emoji: '💄', color: '#e879f9' },
   'Donation':              { emoji: '🙏', color: '#f59e0b' },
   // ── System categories ────────────────────────────────────────────────────
+  'Salary':                { emoji: '💼', color: '#16a34a' },
   'Income':                { emoji: '💰', color: '#22c55e' },
   'Transfers':             { emoji: '🔁', color: '#94a3b8' },
   'Uncategorized':         { emoji: '❓', color: '#9ca3af' },

@@ -105,3 +105,38 @@ CREATE TABLE IF NOT EXISTS transaction_tags (
 
 CREATE INDEX IF NOT EXISTS idx_transaction_tags_txn ON transaction_tags(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag ON transaction_tags(tag_id);
+
+CREATE TABLE IF NOT EXISTS savings_goals (
+  id              BIGSERIAL PRIMARY KEY,
+  name            TEXT NOT NULL,
+  target_amount   NUMERIC NOT NULL,
+  current_amount  NUMERIC NOT NULL DEFAULT 0,
+  deadline        TEXT,
+  category        TEXT,
+  monthly_target  NUMERIC DEFAULT 0,
+  color           TEXT NOT NULL DEFAULT '#6366f1',
+  is_active       INTEGER NOT NULL DEFAULT 1,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shared_expenses (
+  id              BIGSERIAL PRIMARY KEY,
+  date            TEXT NOT NULL,
+  description     TEXT NOT NULL,
+  total_amount    NUMERIC NOT NULL,
+  paid_by         TEXT NOT NULL DEFAULT 'Amandeep',
+  aman_share      NUMERIC NOT NULL,
+  preet_share     NUMERIC NOT NULL,
+  is_settlement   INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS transaction_splits (
+  id                      BIGSERIAL PRIMARY KEY,
+  parent_transaction_id   BIGINT NOT NULL,
+  category                TEXT NOT NULL,
+  sub_category            TEXT,
+  amount                  NUMERIC NOT NULL,
+  description             TEXT,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

@@ -5,7 +5,11 @@ from datetime import date
 import hashlib, time
 
 from utils.db import select, insert
-from utils.categories import ALL_BUDGET_CATEGORIES, INVESTMENT_CATEGORIES, cat_emoji
+from utils.categories import (
+    INVESTMENT_CATEGORIES, cat_emoji,
+    get_all_category_options, get_custom_categories,
+    create_custom_category, delete_custom_category,
+)
 from utils.categorizer import categorize
 from utils.formatters import fmt_inr
 
@@ -14,6 +18,9 @@ st.title("➕ Add Transaction")
 
 accounts   = select("accounts", is_active=1)
 acct_names = [a["name"] for a in accounts] or ["Manual"]
+
+# Dynamic category list (built-in + custom)
+all_cat_options = get_all_category_options()
 
 with st.form("add_tx", clear_on_submit=True):
     c1, c2 = st.columns(2)
@@ -31,12 +38,12 @@ with st.form("add_tx", clear_on_submit=True):
     # Auto-suggest category from description
     suggested = categorize(description) if description.strip() else {}
     suggested_cat = suggested.get("category", "")
-    default_idx   = (ALL_BUDGET_CATEGORIES.index(suggested_cat)
-                     if suggested_cat in ALL_BUDGET_CATEGORIES else 0)
+    default_idx   = (all_cat_options.index(suggested_cat)
+                     if suggested_cat in all_cat_options else 0)
 
     category     = c2.selectbox(
         "Category",
-        ALL_BUDGET_CATEGORIES,
+        all_cat_options,
         index=default_idx,
         format_func=lambda c: f"{cat_emoji(c)} {c}",
         help="Auto-suggested from description — change if needed.",
@@ -56,7 +63,8 @@ if submitted:
         st.error("Enter a valid amount.")
     else:
         is_investment = "Investment" in tx_type or category in INVESTMENT_CATEGORIES
-        final_amount  = abs(amount) if "Income" in tx_type else -abs(amount)
+        is_salary    = category == "Salary"
+        final_amount = abs(amount) if ("Income" in tx_type or is_salary) else -abs(amount)
 
         cat_data = categorize(description) if description.strip() else {}
         row = {
@@ -82,3 +90,36 @@ if submitted:
             st.cache_data.clear()
         else:
             st.warning("Could not save — check Supabase connection.")
+
+# ── Custom Categories ──────────────────────────────────────────────────────
+
+st.divider()
+with st.expander("📌 Manage Custom Categories"):
+    custom = get_custom_categories()
+
+    # Create new
+    cc1, cc2, cc3 = st.columns([3, 1, 1])
+    new_name  = cc1.text_input("Category name", placeholder="e.g. Subscriptions")
+    new_emoji = cc2.text_input("Emoji", value="📌", max_chars=2)
+    new_color = cc3.color_picker("Color", value="#9ca3af")
+
+    if st.button("➕ Create Category"):
+        if not new_name.strip():
+            st.error("Enter a category name.")
+        else:
+            result = create_custom_category(new_name.strip(), new_emoji, new_color)
+            if result:
+                st.success(f"Created **{new_emoji} {new_name.strip()}**")
+                st.rerun()
+            else:
+                st.warning("Category already exists (built-in or custom).")
+
+    # List existing custom categories
+    if custom:
+        st.caption("Your custom categories:")
+        for c in custom:
+            col1, col2 = st.columns([5, 1])
+            col1.write(f"{c.get('emoji', '📌')} **{c['name']}**")
+            if col2.button("🗑️", key=f"del_cat_{c['id']}", help=f"Delete {c['name']}"):
+                delete_custom_category(c["name"])
+                st.rerun()

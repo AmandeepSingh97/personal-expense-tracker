@@ -41,7 +41,7 @@ spend_map     = summary.get("spend", {})
 total_income  = summary.get("income", 0)
 total_invested = summary.get("invest", 0)
 total_expenses = sum(v for c, v in spend_map.items()
-                     if c not in INVESTMENT_CATEGORIES and c not in {"Income", "Transfers"})
+                     if c not in INVESTMENT_CATEGORIES and c not in {"Salary", "Income", "Transfers"})
 remaining = total_income - total_expenses - total_invested
 
 budget_map = {r["category"]: r for r in budgets}

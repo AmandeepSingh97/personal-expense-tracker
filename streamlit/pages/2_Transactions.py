@@ -7,7 +7,7 @@ from utils.db import select, update, delete
 from utils.data import get_transactions
 from utils.budget_period import current_period, period_label, last_n_periods
 from utils.data import get_transactions as _get_txns  # noqa: F401 keep data import consistent
-from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji
+from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji, get_all_category_names, get_all_category_options
 from utils.formatters import fmt_inr, fmt_date
 
 st.set_page_config(page_title="Transactions", page_icon="📋", layout="wide")
@@ -27,7 +27,7 @@ with st.sidebar:
     accts = select("accounts", is_active=1)
     acct_list = ["All"] + [a["name"] for a in accts]
     sel_account = st.selectbox("Account", acct_list)
-    cat_filter = st.selectbox("Category", ["All"] + ALL_BUDGET_CATEGORIES + ["Uncategorized","Income","Transfers"])
+    cat_filter = st.selectbox("Category", ["All"] + get_all_category_options() + ["Uncategorized"])
     show_transfers = st.checkbox("Include transfers")
 
 # ── Load & filter ─────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ c3.metric("Total In",     fmt_inr(total_in))
 with st.expander("⚡ Bulk categorize"):
     ids = st.multiselect("Select transaction IDs", df["id"].tolist(),
         format_func=lambda i: df[df["id"]==i]["description"].values[0][:50] if len(df[df["id"]==i]) else str(i))
-    new_cat = st.selectbox("New category", ALL_BUDGET_CATEGORIES,
+    new_cat = st.selectbox("New category", get_all_category_options(),
         format_func=lambda c: f"{cat_emoji(c)} {c}", key="bulk_cat")
     if st.button("Apply") and ids:
         for tid in ids:
@@ -107,7 +107,7 @@ for _, r in df.sort_values("date", ascending=False).iterrows():
 
     if st.session_state.get(f"editing_{r['id']}"):
         with st.form(f"form_{r['id']}"):
-            opts = ALL_BUDGET_CATEGORIES + ["Income", "Transfers", "Uncategorized"]
+            opts = get_all_category_options() + ["Uncategorized"]
             cur_idx = opts.index(r["category"]) if r.get("category") in opts else 0
             new_c   = st.selectbox("Category", opts, index=cur_idx,
                 format_func=lambda c: f"{cat_emoji(c)} {c}", key=f"c_{r['id']}")

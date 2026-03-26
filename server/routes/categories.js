@@ -26,6 +26,7 @@ const BUILTIN = [
   { name: 'Preet Badminton',       emoji: '🏸', color: '#38bdf8', custom: false },
   { name: 'Preet Beauty Products', emoji: '💄', color: '#e879f9', custom: false },
   { name: 'Donation',              emoji: '🙏', color: '#f59e0b', custom: false },
+  { name: 'Salary',                emoji: '💼', color: '#16a34a', custom: false },
   { name: 'Income',                emoji: '💰', color: '#22c55e', custom: false },
   { name: 'Transfers',             emoji: '🔁', color: '#94a3b8', custom: false },
   { name: 'Uncategorized',         emoji: '❓', color: '#9ca3af', custom: false },

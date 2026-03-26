@@ -143,7 +143,7 @@ const RULES = [
   { re: /neft\s*to|imps\s*to|self\s*transfer|own\s*account/i, category: 'Transfers', sub: null, merchant: null, recurring: false, is_transfer: true },
 
   // ── Income ──────────────────────────────────────────────────────────────────
-  { re: /salary|sal\s*crd|payroll|stipend|linkedin\s*technology/i, category: 'Income', sub: 'Salary', merchant: 'LinkedIn', recurring: true },
+  { re: /salary|sal\s*crd|payroll|stipend|linkedin\s*technology/i, category: 'Salary', sub: null, merchant: 'LinkedIn', recurring: true },
   { re: /interest\s*cr(edit)?|int\s*pd|int\s*cr/i,  category: 'Income', sub: 'Interest', merchant: null, recurring: true  },
   { re: /sovereign\s*gold|sgb/i,                    category: 'Income', sub: 'SGB Interest', merchant: null, recurring: false },
   // IRM = International Remittance (MSFT dividend converted from USD)
