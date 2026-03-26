@@ -11,7 +11,7 @@ from utils.data import (
 )
 from utils.budget_period import current_period, period_label, last_n_periods
 from utils.categories import CATEGORY_GROUPS, INVESTMENT_CATEGORIES, cat_emoji, cat_color
-from utils.formatters import fmt_inr
+from utils.formatters import fmt_inr, fmt_inr_full
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Dashboard")
@@ -150,7 +150,7 @@ if accounts:
     a_cols = st.columns(min(len(accounts), 4))
     for i, a in enumerate(accounts):
         with a_cols[i % 4]:
-            st.metric(a["name"], fmt_inr(a["current_balance"]))
+            st.metric(a["name"], fmt_inr_full(a["current_balance"]))
 
     if acct_hist and acct_meta:
         df_h = pd.DataFrame(acct_hist)

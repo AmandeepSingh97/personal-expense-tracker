@@ -31,6 +31,30 @@ def fmt_date(d) -> str:
         return str(d)
 
 
+def fmt_inr_full(amount) -> str:
+    """Format as full INR with 2 decimal places, Indian grouping (no abbreviation)."""
+    if amount is None:
+        return "—"
+    amount = float(amount)
+    sign = "-" if amount < 0 else ""
+    abs_amt = abs(amount)
+    # Indian grouping: last 3 digits, then groups of 2
+    integer_part = int(abs_amt)
+    decimal_part = f"{abs_amt - integer_part:.2f}"[1:]  # ".XX"
+    s = str(integer_part)
+    if len(s) <= 3:
+        formatted = s
+    else:
+        last3 = s[-3:]
+        rest = s[:-3]
+        groups = []
+        while rest:
+            groups.insert(0, rest[-2:])
+            rest = rest[:-2]
+        formatted = ",".join(groups) + "," + last3
+    return f"{sign}₹{formatted}{decimal_part}"
+
+
 def color_amount(amount) -> str:
     """Return green/red CSS color based on sign."""
     return "#10b981" if float(amount or 0) >= 0 else "#ef4444"

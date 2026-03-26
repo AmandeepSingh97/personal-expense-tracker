@@ -4,7 +4,7 @@ import streamlit as st, json
 from datetime import date, datetime
 from utils.db import select, insert, update, delete
 from utils.data import get_accounts_with_balance
-from utils.formatters import fmt_inr, fmt_date
+from utils.formatters import fmt_inr, fmt_inr_full, fmt_date
 
 st.set_page_config(page_title="Accounts", page_icon="🏦", layout="wide")
 st.title("🏦 Accounts")
@@ -17,7 +17,7 @@ PRESET_TAGS = ["salary account","spending account","savings account","holiday fu
 accounts = get_accounts_with_balance()
 net_worth = sum(a["current_balance"] for a in accounts)
 if accounts:
-    st.metric("💰 Net Worth", fmt_inr(net_worth))
+    st.metric("💰 Net Worth", fmt_inr_full(net_worth))
     st.divider()
 
 # ── Add account ───────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ else:
                 st.markdown(
                     f"**{TYPE_EMOJI.get(a['account_type'],'🏦')} {a['name']}**"
                     + (f"  ·  {a['bank']}" if a.get("bank") else "")
-                    + f"  —  <span style='color:{bc}'>{fmt_inr(bal)}</span>"
+                    + f"  —  <span style='color:{bc}'>{fmt_inr_full(bal)}</span>"
                     + f"  <span style='color:#64748b;font-size:0.8rem'>({a['tx_count']} txns)</span>",
                     unsafe_allow_html=True,
                 )
