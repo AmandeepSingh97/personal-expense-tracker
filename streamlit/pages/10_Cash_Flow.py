@@ -266,11 +266,10 @@ if accounts:
         d = today + timedelta(days=i)
         if d.day == 25:
             fig_line.add_vline(
-                x=d.isoformat(),
+                x=d,
                 line_dash="dot",
                 line_color="#10b981",
                 annotation_text="Salary day",
-                annotation_position="top",
             )
 
     fig_line.update_layout(
