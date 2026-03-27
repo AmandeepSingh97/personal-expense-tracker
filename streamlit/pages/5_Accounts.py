@@ -4,6 +4,7 @@ import streamlit as st, json
 from datetime import date, datetime
 from utils.db import select, insert, update, delete
 from utils.data import get_accounts_with_balance
+from utils.categories import get_all_category_options, cat_emoji
 from utils.formatters import fmt_inr, fmt_inr_full, fmt_date
 
 st.set_page_config(page_title="Accounts", page_icon="🏦", layout="wide")
@@ -140,3 +141,41 @@ else:
                 st.session_state.pop(f"edit_{a['id']}", None); st.rerun()
 
         st.divider()
+
+# ── Category → Account Links ────────────────────────────────────────────────
+
+st.subheader("🔗 Category → Account Links")
+st.caption("When a transaction is categorized (e.g. Emergency Cash), auto-create a mirror credit in the linked account.")
+
+existing_links = select("category_account_links")
+acct_names_all = [a["name"] for a in accounts]
+
+# Add new link
+with st.form("add_link"):
+    lc1, lc2 = st.columns(2)
+    link_cat  = lc1.selectbox("Category", get_all_category_options(),
+                               format_func=lambda c: f"{cat_emoji(c)} {c}")
+    link_acct = lc2.selectbox("Destination Account", acct_names_all)
+    if st.form_submit_button("➕ Add Link", use_container_width=True):
+        if any(l["category"] == link_cat for l in existing_links):
+            st.warning(f"**{link_cat}** already linked — delete the old one first.")
+        else:
+            insert("category_account_links", {
+                "category": link_cat,
+                "destination_account": link_acct,
+                "is_active": 1,
+            })
+            st.success(f"Linked **{link_cat}** → **{link_acct}**")
+            st.rerun()
+
+# List existing links
+if existing_links:
+    for lnk in existing_links:
+        lc1, lc2, lc3 = st.columns([3, 3, 1])
+        lc1.write(f"{cat_emoji(lnk['category'])} **{lnk['category']}**")
+        lc2.write(f"→ **{lnk['destination_account']}**")
+        if lc3.button("🗑️", key=f"del_link_{lnk['id']}"):
+            delete("category_account_links", id=lnk["id"])
+            st.rerun()
+else:
+    st.info("No links configured. Add one above — e.g. **Emergency Cash → Canara Savings**.")

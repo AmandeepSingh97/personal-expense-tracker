@@ -8,7 +8,7 @@ from datetime import datetime
 
 from utils.db import select, insert, select_all
 from utils.categorizer import categorize
-from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji
+from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji, get_category_links, create_mirror_transaction
 from utils.formatters import fmt_inr
 
 st.set_page_config(page_title="Import", page_icon="📥", layout="wide")
@@ -217,12 +217,14 @@ if st.session_state.get("import_rows"):
         st.dataframe(df_p, use_container_width=True, hide_index=True)
 
     if st.button("✅ Import All", type="primary", use_container_width=True):
-        imp = skip = 0
+        imp = skip = mirrors = 0
         # Fetch ALL existing hashes in ONE call — avoids N separate API calls
         existing_hashes = {
             r["dedup_hash"] for r in select_all("transactions", columns="dedup_hash")
             if r.get("dedup_hash")
         }
+        # Pre-fetch category→account links once for the whole batch
+        links = get_category_links()
         progress = st.progress(0)
         for i, r in enumerate(rows):
             h = hashlib.sha256(f"{r['date']}|{r['description']}|{r['amount']}".encode()).hexdigest()
@@ -230,7 +232,7 @@ if st.session_state.get("import_rows"):
                 skip += 1
             else:
                 existing_hashes.add(h)   # prevent in-batch duplicates
-                insert("transactions", {
+                tx_row = {
                     "date": r["date"], "description": r["description"],
                     "amount": float(r["amount"]), "account_name": account_name,
                     "category": r.get("category"), "sub_category": r.get("sub_category"),
@@ -240,10 +242,17 @@ if st.session_state.get("import_rows"):
                     "is_transfer":   int(r.get("is_transfer",   False)),
                     "manually_corrected": int(r.get("manually_corrected", 0)),
                     "dedup_hash": h,
-                })
+                }
+                insert("transactions", tx_row)
                 imp += 1
+                # Auto-mirror to linked account if configured
+                if create_mirror_transaction({**tx_row, "account_name": account_name}, links):
+                    mirrors += 1
             progress.progress((i + 1) / len(rows))
 
-        st.success(f"✅ Imported **{imp}** transactions. Skipped **{skip}** duplicates.")
+        msg = f"✅ Imported **{imp}** transactions. Skipped **{skip}** duplicates."
+        if mirrors:
+            msg += f" Created **{mirrors}** mirror transactions in linked accounts."
+        st.success(msg)
         st.session_state.pop("import_rows", None)
         st.cache_data.clear()

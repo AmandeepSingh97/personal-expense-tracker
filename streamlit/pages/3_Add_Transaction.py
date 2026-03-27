@@ -9,6 +9,7 @@ from utils.categories import (
     INVESTMENT_CATEGORIES, cat_emoji,
     get_all_category_options, get_custom_categories,
     create_custom_category, delete_custom_category,
+    create_mirror_transaction,
 )
 from utils.categorizer import categorize
 from utils.formatters import fmt_inr
@@ -86,7 +87,11 @@ if submitted:
 
         result = insert("transactions", row)
         if result:
-            st.success(f"✅ **{fmt_inr(amount)}** added to **{category}** from **{account_name}**")
+            mirror = create_mirror_transaction(row)
+            msg = f"✅ **{fmt_inr(amount)}** added to **{category}** from **{account_name}**"
+            if mirror:
+                msg += f" → mirrored to **{mirror['account_name']}**"
+            st.success(msg)
             st.cache_data.clear()
         else:
             st.warning("Could not save — check Supabase connection.")

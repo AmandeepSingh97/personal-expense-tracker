@@ -140,3 +140,11 @@ CREATE TABLE IF NOT EXISTS transaction_splits (
   description             TEXT,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS category_account_links (
+  id                  BIGSERIAL PRIMARY KEY,
+  category            TEXT NOT NULL UNIQUE,
+  destination_account TEXT NOT NULL,
+  is_active           INTEGER NOT NULL DEFAULT 1,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

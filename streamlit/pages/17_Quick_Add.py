@@ -5,7 +5,7 @@ import re, hashlib, time
 from datetime import date
 
 from utils.db import select, insert
-from utils.categories import cat_emoji, get_all_category_options, SYSTEM_CATEGORIES
+from utils.categories import cat_emoji, get_all_category_options, SYSTEM_CATEGORIES, create_mirror_transaction
 from utils.categorizer import categorize
 from utils.formatters import fmt_inr
 
@@ -95,9 +95,12 @@ def build_row(amount: float, description: str, category_override: str | None = N
 
 
 def save_transaction(row: dict) -> bool:
-    """Insert row and clear cache. Returns True on success."""
+    """Insert row, create mirror if linked, and clear cache. Returns True on success."""
     result = insert("transactions", row)
     if result:
+        mirror = create_mirror_transaction(row)
+        if mirror:
+            st.caption(f"↳ Mirrored to **{mirror['account_name']}**")
         st.cache_data.clear()
         return True
     return False
