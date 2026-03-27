@@ -28,7 +28,6 @@ from utils.data import _all_transactions, get_transactions
 from utils.db import delete, insert, select, update
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Goals", page_icon="\U0001f3af", layout="wide")
 st.title("\U0001f3af Goals & Savings Targets")
 
 # ── Colour palette for new goals ──────────────────────────────────────────────

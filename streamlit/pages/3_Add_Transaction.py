@@ -14,7 +14,6 @@ from utils.categories import (
 from utils.categorizer import categorize
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Add Transaction", page_icon="➕", layout="centered")
 st.title("➕ Add Transaction")
 
 accounts   = select("accounts", is_active=1)

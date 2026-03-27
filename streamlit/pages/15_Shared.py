@@ -29,7 +29,6 @@ from utils.db import select, select_all, insert
 from utils.formatters import fmt_inr, fmt_date
 from utils.budget_period import current_period, period_label, last_n_periods
 
-st.set_page_config(page_title="Shared Expenses", page_icon="\U0001F46B", layout="wide")
 st.title("\U0001F46B Shared Expenses — Settlement with Preet")
 
 # ── Load all shared expenses ─────────────────────────────────────────────────

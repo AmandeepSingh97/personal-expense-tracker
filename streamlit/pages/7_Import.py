@@ -11,7 +11,6 @@ from utils.categorizer import categorize
 from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji, get_category_links, create_mirror_transaction
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Import", page_icon="📥", layout="wide")
 st.title("📥 Import Transactions")
 
 # ── Joint expense splitter ────────────────────────────────────────────────────

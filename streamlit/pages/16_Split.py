@@ -22,7 +22,6 @@ from utils.budget_period import current_period, period_label, last_n_periods
 from utils.categories import cat_emoji, get_all_category_options
 from utils.formatters import fmt_inr, fmt_date
 
-st.set_page_config(page_title="Split Transaction", page_icon="✂️", layout="wide")
 st.title("✂️ Split Transaction")
 
 # ── Session state defaults ────────────────────────────────────────────────────

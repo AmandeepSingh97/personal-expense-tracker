@@ -8,7 +8,6 @@ from utils.budget_period import current_period, period_label, last_n_periods
 from utils.categories import CATEGORY_GROUPS, cat_emoji
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Budgets", page_icon="💳", layout="wide")
 st.title("💳 Budgets")
 
 # ── Period selector ───────────────────────────────────────────────────────────

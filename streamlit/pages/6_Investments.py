@@ -9,7 +9,6 @@ from utils.budget_period import period_label
 from utils.categories import cat_emoji
 from utils.formatters import fmt_inr, fmt_date
 
-st.set_page_config(page_title="Investments", page_icon="📈", layout="wide")
 st.title("📈 Investments")
 st.caption("Cumulative — money building wealth. No monthly budget limit.")
 

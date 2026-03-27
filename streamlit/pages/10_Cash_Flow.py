@@ -11,7 +11,6 @@ from utils.budget_period import current_period, period_label, last_n_periods, pe
 from utils.categories import INVESTMENT_CATEGORIES, SYSTEM_CATEGORIES
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Cash Flow", page_icon="📈", layout="wide")
 st.title("📈 Cash Flow Forecast")
 
 # ── Helper: compute period-level income and expense totals ───────────────────

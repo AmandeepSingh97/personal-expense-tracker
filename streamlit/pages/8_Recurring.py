@@ -10,7 +10,6 @@ from utils.budget_period import current_period, period_label, last_n_periods, pe
 from utils.categories import cat_emoji, cat_color, CATEGORY_META, SYSTEM_CATEGORIES
 from utils.formatters import fmt_inr, fmt_date
 
-st.set_page_config(page_title="Recurring", page_icon="🔄", layout="wide")
 st.title("🔄 Recurring Transaction Tracker")
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

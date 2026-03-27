@@ -9,7 +9,6 @@ from utils.categories import cat_emoji, get_all_category_options, CATEGORY_META
 from utils.categorizer import categorize, RULES
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Rules", page_icon="⚙️", layout="wide")
 st.title("⚙️ Category Rules Manager")
 st.caption("Manage custom categorization rules and test how descriptions get categorized.")
 

@@ -12,7 +12,6 @@ from utils.categories import (
 )
 from utils.formatters import fmt_inr
 
-st.set_page_config(page_title="Annual Summary", page_icon="📊", layout="wide")
 st.title("📊 Annual Summary / Tax Helper")
 
 # ── Financial year helpers ────────────────────────────────────────────────────

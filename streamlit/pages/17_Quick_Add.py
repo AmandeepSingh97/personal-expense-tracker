@@ -12,7 +12,6 @@ from utils.formatters import fmt_inr
 # ---------------------------------------------------------------------------
 # Page config -- centered layout for mobile
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Quick Add", page_icon="⚡", layout="centered")
 st.title("⚡ Quick Add")
 st.caption("Type something like **200 swiggy** or **salary 150000** and tap Save.")
 

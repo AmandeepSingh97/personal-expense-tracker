@@ -13,7 +13,6 @@ from utils.budget_period import current_period, period_label, last_n_periods
 from utils.categories import CATEGORY_GROUPS, INVESTMENT_CATEGORIES, cat_emoji, cat_color
 from utils.formatters import fmt_inr, fmt_inr_full
 
-st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Dashboard")
 
 # ── Period selector ───────────────────────────────────────────────────────────

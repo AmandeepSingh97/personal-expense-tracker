@@ -7,7 +7,6 @@ from utils.data import get_accounts_with_balance
 from utils.categories import get_all_category_options, cat_emoji
 from utils.formatters import fmt_inr, fmt_inr_full, fmt_date
 
-st.set_page_config(page_title="Accounts", page_icon="🏦", layout="wide")
 st.title("🏦 Accounts")
 
 TYPE_EMOJI = {"savings":"🏦","current":"🏢","credit":"💳","investment":"📈","cash":"💵"}

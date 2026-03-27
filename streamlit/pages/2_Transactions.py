@@ -10,7 +10,6 @@ from utils.data import get_transactions as _get_txns  # noqa: F401 keep data imp
 from utils.categories import ALL_BUDGET_CATEGORIES, cat_emoji, get_all_category_names, get_all_category_options
 from utils.formatters import fmt_inr, fmt_date
 
-st.set_page_config(page_title="Transactions", page_icon="📋", layout="wide")
 st.title("📋 Transactions")
 
 # ── Filters ───────────────────────────────────────────────────────────────────
