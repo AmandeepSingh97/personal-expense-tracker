@@ -174,8 +174,8 @@ def create_mirror_transaction(original: dict, links: dict | None = None) -> dict
         "category":          cat,
         "sub_category":      original.get("sub_category"),
         "merchant_name":     None,
-        "is_recurring":      int(original.get("is_recurring", 0)),
-        "is_investment":     int(original.get("is_investment", 0)),
+        "is_recurring":      0,  # mirror is not a recurring bill
+        "is_investment":     0,  # mirror is not an investment (just a balance transfer)
         "is_transfer":       1,  # marked as transfer so it doesn't inflate income totals
         "manually_corrected": 1,
         "dedup_hash":        hashlib.sha256(

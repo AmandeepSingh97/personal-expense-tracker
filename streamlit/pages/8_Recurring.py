@@ -19,7 +19,7 @@ def _recurring_df(df: pd.DataFrame) -> pd.DataFrame:
     """Filter to recurring expense transactions only."""
     if df.empty or "is_recurring" not in df.columns:
         return pd.DataFrame()
-    mask = (df["is_recurring"].astype(int) == 1) & (df["amount"] < 0)
+    mask = (df["is_recurring"].astype(int) == 1) & (df["amount"] < 0) & (df["is_transfer"].astype(int) == 0)
     return df[mask].copy()
 
 

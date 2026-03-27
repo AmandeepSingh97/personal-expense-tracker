@@ -147,7 +147,7 @@ def get_investment_summary() -> dict:
 
     df["is_investment"] = df["is_investment"].astype(int)
     inv_out = df[(df["is_investment"] == 1) & (df["amount"] < 0) & (df["is_transfer"] == 0)]
-    inv_in  = df[(df["is_investment"] == 1) & (df["amount"] > 0)]
+    inv_in  = df[(df["is_investment"] == 1) & (df["amount"] > 0) & (df["is_transfer"] == 0)]
 
     # Income from investments
     sub_cat = df["sub_category"] if "sub_category" in df.columns else pd.Series("", index=df.index)
