@@ -179,3 +179,55 @@ if existing_links:
             st.rerun()
 else:
     st.info("No links configured. Add one above — e.g. **Emergency Cash → Canara Savings**.")
+
+# Backfill mirrors for past transactions
+if existing_links:
+    st.divider()
+    st.caption("**Backfill**: Create mirrors for past transactions that don't have one yet.")
+    if st.button("🔄 Backfill missing mirrors", use_container_width=True):
+        import hashlib, time
+        from utils.data import _all_transactions
+        links = {l["category"]: l["destination_account"] for l in existing_links if l.get("is_active", 1)}
+        df = _all_transactions()
+        if df.empty:
+            st.info("No transactions to backfill.")
+        else:
+            created = 0
+            for cat, dest in links.items():
+                # Find original outflows for this category (negative amount, not already in dest account)
+                mask = (df["category"] == cat) & (df["amount"] < 0) & (df["account_name"] != dest)
+                originals = df[mask]
+                # Find existing mirrors in dest account for this category
+                mirror_mask = (df["category"] == cat) & (df["amount"] > 0) & (df["account_name"] == dest) & (df["is_transfer"] == 1)
+                existing_mirrors = df[mirror_mask]
+                # Match by date + abs(amount) to find missing mirrors
+                existing_keys = set(
+                    zip(existing_mirrors["date"], existing_mirrors["amount"].round(2))
+                ) if not existing_mirrors.empty else set()
+                for _, row in originals.iterrows():
+                    key = (row["date"], round(abs(float(row["amount"])), 2))
+                    if key not in existing_keys:
+                        amt = abs(float(row["amount"]))
+                        h = hashlib.sha256(
+                            f"mirror|{row['date']}|{cat}|{row['amount']}|{dest}|{time.time()}".encode()
+                        ).hexdigest()
+                        insert("transactions", {
+                            "date": row["date"],
+                            "description": f"[From {row['account_name']}] {str(row['description'])[:80]}",
+                            "amount": amt,
+                            "account_name": dest,
+                            "category": cat,
+                            "sub_category": row.get("sub_category"),
+                            "is_recurring": int(row.get("is_recurring", 0)),
+                            "is_investment": int(row.get("is_investment", 0)),
+                            "is_transfer": 1,
+                            "manually_corrected": 1,
+                            "dedup_hash": h,
+                        })
+                        existing_keys.add(key)  # prevent duplicates within same backfill
+                        created += 1
+            if created:
+                st.success(f"✅ Created **{created}** mirror transactions.")
+                st.cache_data.clear()
+            else:
+                st.info("All mirrors already exist — nothing to backfill.")
