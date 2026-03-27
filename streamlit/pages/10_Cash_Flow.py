@@ -207,7 +207,7 @@ st.subheader("Day-by-Day Balance Forecast — Next 30 Days")
 st.caption("Based on recurring transaction patterns from recent periods")
 
 # Find recurring expense patterns by day-of-month from historical data
-df_hist = df[df["period"].isin(hist_periods)].copy()
+df_hist = df[(df["period"].isin(hist_periods)) & (df["is_transfer"] == 0)].copy()
 
 # Build a daily recurring pattern: average spend/income per day-of-month
 recurring_by_dom = {}

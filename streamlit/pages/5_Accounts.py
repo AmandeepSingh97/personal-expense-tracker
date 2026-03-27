@@ -114,8 +114,10 @@ else:
                 new_date    = new_date_d.isoformat()
                 new_color   = c2.selectbox("Color", COLORS,
                     index=COLORS.index(a["color"]) if a["color"] in COLORS else 0)
+                existing_custom_tags = [t for t in tags if t not in PRESET_TAGS]
                 new_tags    = st.multiselect("Tags", PRESET_TAGS, default=[t for t in tags if t in PRESET_TAGS])
                 new_custom  = st.text_input("Custom tag", value="")
+                st.caption(f"Existing custom tags: {', '.join(existing_custom_tags)}" if existing_custom_tags else "")
                 new_notes   = st.text_input("Notes", value=a.get("notes") or "")
 
                 sv, ca = st.columns(2)
@@ -123,7 +125,7 @@ else:
                 cancel = ca.form_submit_button("Cancel", use_container_width=True)
 
             if saved:
-                all_tags = new_tags + ([new_custom.strip()] if new_custom.strip() else [])
+                all_tags = existing_custom_tags + new_tags + ([new_custom.strip()] if new_custom.strip() else [])
                 update("accounts", {
                     "name":            new_name.strip(),
                     "bank":            new_bank or None,
@@ -159,6 +161,8 @@ with st.form("add_link"):
     if st.form_submit_button("➕ Add Link", use_container_width=True):
         if any(l["category"] == link_cat for l in existing_links):
             st.warning(f"**{link_cat}** already linked — delete the old one first.")
+        elif link_acct not in acct_names_all:
+            st.error(f"Account **{link_acct}** does not exist.")
         else:
             insert("category_account_links", {
                 "category": link_cat,
@@ -200,12 +204,14 @@ if existing_links:
                 # Find existing mirrors in dest account for this category
                 mirror_mask = (df["category"] == cat) & (df["amount"] > 0) & (df["account_name"] == dest) & (df["is_transfer"] == 1)
                 existing_mirrors = df[mirror_mask]
-                # Match by date + abs(amount) to find missing mirrors
-                existing_keys = set(
-                    zip(existing_mirrors["date"], existing_mirrors["amount"].round(2))
-                ) if not existing_mirrors.empty else set()
+                # Match by date + abs(amount) + source account to find missing mirrors
+                existing_keys = set()
+                if not existing_mirrors.empty:
+                    for _, m in existing_mirrors.iterrows():
+                        existing_keys.add((str(m["date"]), round(float(m["amount"]), 2), str(m["description"])[:30]))
                 for _, row in originals.iterrows():
-                    key = (row["date"], round(abs(float(row["amount"])), 2))
+                    mirror_desc = f"[From {row['account_name']}] {str(row['description'])[:80]}"
+                    key = (str(row["date"]), round(abs(float(row["amount"])), 2), mirror_desc[:30])
                     if key not in existing_keys:
                         amt = abs(float(row["amount"]))
                         h = hashlib.sha256(

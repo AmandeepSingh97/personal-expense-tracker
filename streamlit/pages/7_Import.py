@@ -227,7 +227,7 @@ if st.session_state.get("import_rows"):
         links = get_category_links()
         progress = st.progress(0)
         for i, r in enumerate(rows):
-            h = hashlib.sha256(f"{r['date']}|{r['description']}|{r['amount']}".encode()).hexdigest()
+            h = hashlib.sha256(f"{r['date']}|{r['description']}|{r['amount']}|{account_name}".encode()).hexdigest()
             if h in existing_hashes:
                 skip += 1
             else:

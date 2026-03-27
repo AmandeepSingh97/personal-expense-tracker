@@ -176,14 +176,18 @@ with col_pie:
     # Pie chart by account
     alloc_data = [
         {"account": a["name"], "balance": a["current_balance"], "color": a.get("color", "#6366f1")}
-        for a in accounts if a["current_balance"] != 0
+        for a in accounts if a["current_balance"] > 0  # only positive balances as assets
     ]
+    debt_data = [a for a in accounts if a["current_balance"] < 0]
+    if debt_data:
+        st.caption(f"Liabilities not shown in pie: " +
+                   ", ".join(f"**{a['name']}** ({fmt_inr(a['current_balance'])})" for a in debt_data))
     if alloc_data:
         df_alloc = pd.DataFrame(alloc_data)
         colors = [d["color"] for d in alloc_data]
         fig_pie = go.Figure(go.Pie(
             labels=df_alloc["account"],
-            values=df_alloc["balance"].abs(),
+            values=df_alloc["balance"],
             hole=0.45,
             marker=dict(colors=colors),
             textinfo="label+percent",

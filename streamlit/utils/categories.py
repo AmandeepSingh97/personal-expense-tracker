@@ -161,6 +161,11 @@ def create_mirror_transaction(original: dict, links: dict | None = None) -> dict
     if original.get("account_name") == dest_account:
         return None
 
+    # Validate destination account exists
+    from utils.db import exists as db_exists
+    if not db_exists("accounts", name=dest_account):
+        return None
+
     # Don't mirror positive amounts (income/credits) — only outflows
     amt = float(original.get("amount", 0))
     if amt >= 0:
@@ -169,7 +174,7 @@ def create_mirror_transaction(original: dict, links: dict | None = None) -> dict
     mirror = {
         "date":              original["date"],
         "description":       f"[From {original.get('account_name', '?')}] {original.get('description', cat)[:80]}",
-        "amount":            abs(amt),  # positive = credit to destination
+        "amount":            round(abs(amt), 2),  # positive = credit to destination
         "account_name":      dest_account,
         "category":          cat,
         "sub_category":      original.get("sub_category"),

@@ -52,7 +52,7 @@ seeded_cats = {b["category"] for b in budgets}
 missing     = [cat for cat, _ in MY_BUDGETS if cat not in seeded_cats]
 
 if missing:
-    label = "🚀 Seed all 22 budgets" if not budgets else f"🚀 Add {len(missing)} missing budgets"
+    label = f"🚀 Seed all {len(MY_BUDGETS)} budgets" if not budgets else f"🚀 Add {len(missing)} missing budgets"
     st.info(f"{len(missing)} budget categories not yet set." if budgets else "No budgets set yet.")
     if st.button(label, type="primary"):
         now = datetime.now(timezone.utc).isoformat()
@@ -61,7 +61,7 @@ if missing:
                 {"category": cat, "monthly_limit": limit,
                  "alert_threshold_pct": 80, "updated_at": now},
                 on_conflict="category")
-        st.success("✅ All 22 budgets created!")
+        st.success(f"✅ {len(missing)} budgets created!")
         st.cache_data.clear(); st.rerun()
 
 # ── Edit / Add a single budget ─────────────────────────────────────────────────

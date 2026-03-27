@@ -20,7 +20,7 @@ total_r = inv["total_returns"]
 c1, c2, c3 = st.columns(3)
 c1.metric("💰 Contributed", fmt_inr(total_c))
 c2.metric("🔄 Returns",     fmt_inr(total_r))
-c3.metric("📊 Net",         fmt_inr(total_c - total_r))
+c3.metric("📊 Returns - Cost", fmt_inr(total_r - total_c))
 st.caption("⚠️ Cost basis only — current market value may differ.")
 st.divider()
 
